@@ -1,215 +1,239 @@
-# Entrega N°1 — Backend 3 (Coderhouse): Mocking de usuarios y mascotas
+# Entrega Final — Backend 3 (Coderhouse): API de Adopciones dockerizada
 
-API en **Node.js + Express + MongoDB (Mongoose)** que incorpora un router de **mocks** para generar datos de prueba con **Faker**: mascotas y usuarios falsos con el mismo formato que devuelve Mongo, y un endpoint que genera e inserta registros en la base de datos para luego consultarlos con los servicios `GET` de users y pets.
+API en **Node.js + Express + MongoDB (Mongoose)** para gestionar usuarios, mascotas y adopciones. Incluye generación de datos de prueba (mocks), documentación **Swagger** del módulo Users, **tests funcionales** del router de adopciones y una **imagen de Docker** publicada en Docker Hub.
 
 **Autor:** Sebastián Felipe Muñoz Rivera
 
 ---
 
+## 🐳 Imagen en Docker Hub
+
+**https://hub.docker.com/r/sebakine/entrega-final-backend-3**
+
+```bash
+docker pull sebakine/entrega-final-backend-3:1.0.0
+```
+
+| Tag      | Descripción                     |
+| -------- | ------------------------------- |
+| `1.0.0`  | Versión de la entrega final     |
+| `latest` | Apunta a la última versión      |
+
+---
+
 ## Tecnologías
 
-- Node.js (ES Modules) y Express 5
+- Node.js 24 (ES Modules) y Express 5
 - MongoDB con Mongoose
-- **@faker-js/faker** (generación de datos falsos)
-- bcrypt (encriptación de contraseñas)
-- Passport.js + JWT en cookie HTTP Only (autenticación heredada del proyecto anterior)
-- dotenv
+- Passport.js + JWT en cookie HTTP Only
+- bcrypt
+- @faker-js/faker (mocks)
+- **swagger-jsdoc + swagger-ui-express** (documentación)
+- **Mocha + Chai + Supertest + mongodb-memory-server** (tests funcionales)
+- **Docker** y Docker Compose
 
 ## Estructura del proyecto
 
 ```
-src/
-├── app.js                         # servidor Express; monta /api/sessions, /api/users, /api/pets y /api/mocks
-├── config/
-│   ├── db.js                      # conexión a MongoDB
-│   └── passport.config.js         # estrategias register, login y current
-├── mocks/
-│   └── mocking.js                 # módulo de Mocking: generateUsers(n) y generatePets(n)
-├── models/
-│   ├── User.js                    # modelo User (incluye pets: [])
-│   └── Pet.js                     # modelo Pet
-├── routes/
-│   ├── mocks.router.js            # /api/mocks → mockingpets, mockingusers, generateData
-│   ├── users.router.js            # /api/users
-│   ├── pets.router.js             # /api/pets
-│   └── sessions.router.js         # /api/sessions
-├── controllers/
-│   ├── mocks.controller.js
-│   ├── users.controller.js
-│   ├── pets.controller.js
-│   └── sessions.controller.js
-├── middlewares/
-│   └── passport.middleware.js
-└── utils/
-    ├── cookies.js
-    ├── hash.js                    # bcrypt
-    └── jwt.js
+├── src/
+│   ├── app.js                       # app Express (rutas, Swagger, errores); se exporta para los tests
+│   ├── server.js                    # punto de entrada: conecta a Mongo y escucha en PORT
+│   ├── config/
+│   │   ├── db.js                    # conexión a MongoDB
+│   │   ├── passport.config.js       # estrategias register, login y current
+│   │   └── swagger.config.js        # configuración de swagger-jsdoc
+│   ├── docs/
+│   │   └── Users/Users.yaml         # documentación Swagger del módulo Users
+│   ├── models/                      # User, Pet, Adoption
+│   ├── routes/
+│   │   ├── users.router.js          # /api/users
+│   │   ├── pets.router.js           # /api/pets
+│   │   ├── adoption.router.js       # /api/adoptions
+│   │   ├── mocks.router.js          # /api/mocks
+│   │   └── sessions.router.js       # /api/sessions
+│   ├── controllers/
+│   ├── mocks/mocking.js             # generateUsers(n) y generatePets(n)
+│   ├── middlewares/
+│   └── utils/
+├── test/
+│   ├── adoption.test.js             # tests funcionales de adoption.router.js
+│   └── users.test.js                # tests del módulo Users y de /api/docs
+├── Dockerfile
+├── docker-compose.yml
+├── .dockerignore
+├── .env.example
+└── package.json
 ```
 
-## Instalación y ejecución
+---
+
+## Ejecutar con Docker
+
+### Opción 1 — Imagen de Docker Hub + Docker Compose (recomendada)
+
+`docker-compose.yml` levanta la API y una base MongoDB:
 
 ```bash
-git clone https://github.com/sebakine/Entrega-1-Backend-3.git
-cd Entrega-1-Backend-3
+git clone https://github.com/sebakine/Entrega-Final-Backend-3-Coderhouse.git
+cd Entrega-Final-Backend-3-Coderhouse
+docker compose pull app      # descarga la imagen desde Docker Hub
+docker compose up -d         # levanta MongoDB + API
+```
+
+- API: `http://localhost:8080`
+- Swagger: `http://localhost:8080/api/docs`
+
+Para usar una clave JWT propia: `JWT_SECRET=mi_clave docker compose up -d`. Para detener todo: `docker compose down`.
+
+### Opción 2 — Solo el contenedor, con una base MongoDB propia (por ejemplo Atlas)
+
+```bash
+docker pull sebakine/entrega-final-backend-3:1.0.0
+
+docker run -d --name adoptme -p 8080:8080 \
+  -e MONGO_URL="mongodb+srv://<usuario>:<password>@<cluster>.mongodb.net/<base>" \
+  -e JWT_SECRET="<clave_secreta>" \
+  sebakine/entrega-final-backend-3:1.0.0
+```
+
+O con un archivo de variables: `docker run -d -p 8080:8080 --env-file .env sebakine/entrega-final-backend-3:1.0.0`.
+
+### Construir la imagen localmente
+
+```bash
+docker build -t sebakine/entrega-final-backend-3:1.0.0 .
+docker run -d -p 8080:8080 --env-file .env sebakine/entrega-final-backend-3:1.0.0
+```
+
+### Publicar la imagen en Docker Hub
+
+```bash
+docker login
+docker tag sebakine/entrega-final-backend-3:1.0.0 sebakine/entrega-final-backend-3:latest
+docker push sebakine/entrega-final-backend-3:1.0.0
+docker push sebakine/entrega-final-backend-3:latest
+```
+
+### Qué hace el Dockerfile
+
+| Paso                                       | Para qué                                                                     |
+| ------------------------------------------ | ---------------------------------------------------------------------------- |
+| `FROM node:24-slim`                        | Imagen oficial de Node con versión fija                                      |
+| `ENV NODE_ENV=production PORT=8080`        | Entorno de ejecución de producción                                           |
+| `WORKDIR /app`                             | Directorio de la aplicación                                                  |
+| `COPY package.json package-lock.json ./`   | Copia primero los manifiestos para cachear la capa de dependencias           |
+| `RUN npm ci --omit=dev`                    | Instalación **reproducible** desde el lockfile, sin dependencias de desarrollo |
+| `COPY src ./src`                           | Copia el código fuente                                                       |
+| `USER node`                                | Ejecuta sin privilegios de root                                              |
+| `EXPOSE 8080` / `CMD ["node", "src/server.js"]` | Puerto y comando de arranque                                            |
+
+`.dockerignore` excluye `node_modules`, `.env`, `.git` y los tests, por lo que **ninguna credencial queda dentro de la imagen**: las variables se pasan al ejecutar el contenedor.
+
+---
+
+## Ejecutar sin Docker
+
+```bash
 npm install
 cp .env.example .env    # completar con los valores reales
 npm start               # o: npm run dev
 ```
 
-El servidor queda escuchando en `http://localhost:<PORT>` (por defecto `8080`).
+### Variables de entorno
 
-## Variables de entorno
-
-Definidas en `.env` (no se sube al repositorio). Ver `.env.example`:
-
-| Variable         | Descripción                                   |
-| ---------------- | --------------------------------------------- |
-| `PORT`           | Puerto del servidor                           |
-| `MONGO_URL`      | Cadena de conexión a MongoDB                  |
-| `JWT_SECRET`     | Clave secreta para firmar los JWT             |
-| `JWT_EXPIRES_IN` | Expiración del JWT (ej. `1h`)                 |
-| `NODE_ENV`       | `development` o `production`                  |
+| Variable         | Descripción                                    | Requerida |
+| ---------------- | ---------------------------------------------- | --------- |
+| `MONGO_URL`      | Cadena de conexión a MongoDB                   | Sí        |
+| `JWT_SECRET`     | Clave secreta para firmar los JWT              | Sí        |
+| `PORT`           | Puerto del servidor (por defecto `8080`)       | No        |
+| `JWT_EXPIRES_IN` | Expiración del JWT (por defecto `1h`)          | No        |
+| `NODE_ENV`       | `development` o `production`                   | No        |
 
 ---
 
-## Router de Mocks — `/api/mocks`
+## Tests funcionales
 
-Definido en `src/routes/mocks.router.js` y montado en `app.js` con `app.use('/api/mocks', mocksRouter)`.
+```bash
+npm test
+```
 
-| Método | Path                         | Descripción                                                                 |
-| ------ | ---------------------------- | --------------------------------------------------------------------------- |
-| GET    | `/api/mocks/mockingpets`     | Genera mascotas falsas (por defecto 100; opcional `?quantity=N`). No inserta. |
-| GET    | `/api/mocks/mockingusers`    | Genera **50 usuarios** con formato de Mongo (opcional `?quantity=N`). No inserta. |
-| POST   | `/api/mocks/generateData`    | Recibe `users` y `pets`, genera esa cantidad de registros y **los inserta** en la base. |
+Los tests usan **Mocha + Chai + Supertest** contra la app real y una base **MongoDB en memoria** (`mongodb-memory-server`), así que no necesitan una base externa ni modifican datos reales. Resultado actual: **17 passing**.
 
-`quantity`, `users` y `pets` deben ser enteros entre `0` y `1000`; si no, responde `400`.
+### Cobertura de `adoption.router.js`
 
-### Módulo de Mocking (`src/mocks/mocking.js`)
+| Endpoint                         | Casos probados                                                                                                    |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `GET /api/adoptions`             | 200 con lista vacía · 200 con todas las adopciones                                                                |
+| `GET /api/adoptions/:aid`        | 200 adopción existente · 404 inexistente · 400 id inválido                                                        |
+| `POST /api/adoptions/:uid/:pid`  | 201 crea la adopción y marca la mascota como adoptada, le asigna dueño y la agrega a `user.pets` · la adopción creada se obtiene por GET · 400 mascota ya adoptada (sin crear otra adopción) · 404 usuario inexistente · 404 mascota inexistente · 400 id de usuario inválido · 400 id de mascota inválido |
 
-- `generateUsers(quantity)` genera `quantity` usuarios donde:
-  - `password` es **`coder123` encriptada con bcrypt** (se hashea una sola vez y se reutiliza).
-  - `role` varía aleatoriamente entre **`user`** y **`admin`**.
-  - `pets` es un **array vacío**.
-  - Incluye `_id` (ObjectId), `createdAt`, `updatedAt` y `__v`, igual que un documento devuelto por Mongo.
-  - El email lleva un sufijo aleatorio para no chocar con el índice único.
-- `generatePets(quantity)` genera mascotas con `name`, `specie`, `birthDate`, `adopted: false`, `owner: null`, `image`, `_id`, timestamps y `__v`.
+También hay tests del módulo Users (GET, PUT, DELETE) y de que `/api/docs` sirve Swagger.
 
-### `GET /api/mocks/mockingusers`
+---
 
-Response `200` (50 elementos):
+## Documentación Swagger (módulo Users)
+
+Disponible en **`http://localhost:8080/api/docs`**. La definición está en `src/docs/Users/Users.yaml`.
+
+| Método | Path              | Descripción                                                    |
+| ------ | ----------------- | -------------------------------------------------------------- |
+| GET    | `/api/users`      | Lista todos los usuarios (sin `password`)                      |
+| GET    | `/api/users/:uid` | Obtiene un usuario · 400 id inválido · 404 inexistente         |
+| PUT    | `/api/users/:uid` | Actualiza `first_name`, `last_name` y/o `role` · 400 / 404     |
+| DELETE | `/api/users/:uid` | Elimina un usuario · 400 / 404                                 |
+
+Se documentan los esquemas `User`, `UpdateUser` y `Error`, los parámetros y todas las respuestas posibles con ejemplos.
+
+---
+
+## Endpoints
+
+### Adopciones — `/api/adoptions`
+
+| Método | Path              | Descripción                                    |
+| ------ | ----------------- | ---------------------------------------------- |
+| GET    | `/`               | Lista las adopciones                           |
+| GET    | `/:aid`           | Obtiene una adopción                           |
+| POST   | `/:uid/:pid`      | El usuario `uid` adopta la mascota `pid`       |
+
+Ejemplo `POST /api/adoptions/6b00.../6b00...` → `201`:
 
 ```json
 {
   "status": "success",
-  "payload": [
-    {
-      "_id": "6b00bd82eeedbb3610b77a3b",
-      "first_name": "Bennett",
-      "last_name": "Konopelski",
-      "email": "bennett_konopelski56.ykeq3i@mock.com",
-      "password": "$2b$10$dfWAL44/EJlb0TuE8Xm/WeJGvFqJgnNfpyN9mj0G9NOn26El2wekK",
-      "role": "admin",
-      "pets": [],
-      "createdAt": "2026-11-20T21:37:06.740Z",
-      "updatedAt": "2026-11-20T21:37:06.740Z",
-      "__v": 0
-    }
-  ]
+  "message": "Mascota adoptada",
+  "payload": { "_id": "6b00c1...", "owner": "6b00c1bb56a28ca89ec4f1fe", "pet": "6b00c1bb56a28ca89ec4f202" }
 }
 ```
 
-### `GET /api/mocks/mockingpets`
+### Mascotas — `/api/pets`
 
-Response `200` (100 elementos por defecto):
+`GET /` lista las mascotas y `GET /:pid` obtiene una.
 
-```json
-{
-  "status": "success",
-  "payload": [
-    {
-      "_id": "6b00bd82eeedbb3610b779d7",
-      "name": "Max",
-      "specie": "tortuga",
-      "birthDate": "2017-02-23T05:57:38.303Z",
-      "adopted": false,
-      "owner": null,
-      "image": "https://picsum.photos/seed/eeP2vK9Xzo/3051/1704",
-      "createdAt": "2026-11-20T21:37:06.463Z",
-      "updatedAt": "2026-11-20T21:37:06.463Z",
-      "__v": 0
-    }
-  ]
-}
-```
+### Mocks — `/api/mocks`
 
-### `POST /api/mocks/generateData`
+| Método | Path             | Descripción                                                                     |
+| ------ | ---------------- | ------------------------------------------------------------------------------- |
+| GET    | `/mockingpets`   | Genera mascotas falsas (100 por defecto, `?quantity=N`). No inserta.            |
+| GET    | `/mockingusers`  | Genera 50 usuarios con formato de Mongo (`?quantity=N`): password `coder123` encriptada, rol `user`/`admin`, `pets: []`. No inserta. |
+| POST   | `/generateData`  | Body `{ "users": N, "pets": M }`: genera e **inserta** los registros.           |
 
-Request (body JSON; también se aceptan por query: `?users=5&pets=7`):
+### Sesiones — `/api/sessions`
 
-```json
-{ "users": 5, "pets": 7 }
-```
-
-Response `201`:
-
-```json
-{
-  "status": "success",
-  "message": "Se insertaron 5 usuarios y 7 mascotas",
-  "payload": {
-    "users": 5,
-    "pets": 7,
-    "userIds": ["6b00bd83eeedbb3610b77a70", "..."],
-    "petIds": ["6b00bd83eeedbb3610b77a79", "..."]
-  }
-}
-```
-
-Response `400`:
-
-```json
-{ "status": "error", "message": "\"users\" debe ser un número entero entre 0 y 1000" }
-```
+`POST /register`, `POST /login`, `GET /current` y `POST /logout`, con estrategias de Passport y JWT en la cookie HTTP Only `currentUser`.
 
 ---
 
-## Comprobación con los servicios GET de users y pets
+## Prueba rápida con el contenedor
 
-| Método | Path                | Descripción                                   |
-| ------ | ------------------- | --------------------------------------------- |
-| GET    | `/api/users`        | Lista los usuarios guardados (sin `password`) |
-| GET    | `/api/users/:uid`   | Obtiene un usuario por id                     |
-| GET    | `/api/pets`         | Lista las mascotas guardadas                  |
-| GET    | `/api/pets/:pid`    | Obtiene una mascota por id                    |
-
-Las respuestas de listado incluyen `count` para verificar rápidamente cuántos registros hay:
-
-```json
-{ "status": "success", "count": 5, "payload": [ ... ] }
+```bash
+# 1. Generar datos
+curl -X POST localhost:8080/api/mocks/generateData -H "Content-Type: application/json" -d '{"users":2,"pets":2}'
+# 2. Tomar un id de usuario y uno de mascota
+curl localhost:8080/api/users
+curl localhost:8080/api/pets
+# 3. Adoptar
+curl -X POST localhost:8080/api/adoptions/<uid>/<pid>
+# 4. Ver adopciones
+curl localhost:8080/api/adoptions
 ```
-
-Flujo de verificación:
-
-1. `GET /api/users` y `GET /api/pets` → anotar `count` (ej. `0` y `0`).
-2. `POST /api/mocks/generateData` con `{ "users": 5, "pets": 7 }`.
-3. `GET /api/users` → `count: 5`; `GET /api/pets` → `count: 7`.
-4. Opcional: `POST /api/sessions/login` con el email de un usuario generado y la contraseña `coder123` → `200 Login correcto` (confirma que la contraseña quedó encriptada correctamente).
-
-## Casos probados
-
-| # | Caso                                                         | Resultado obtenido                                   |
-| - | ------------------------------------------------------------ | ---------------------------------------------------- |
-| 1 | `GET /api/mocks/mockingpets`                                 | 200, 100 mascotas con `_id`, timestamps y `__v`      |
-| 2 | `GET /api/mocks/mockingusers`                                | 200, 50 usuarios; roles `user` y `admin`; `pets: []` |
-| 3 | `bcrypt.compare('coder123', password)` de un usuario mock    | `true`                                               |
-| 4 | `GET /api/users` y `/api/pets` antes de generar              | `count: 0` y `count: 0`                              |
-| 5 | `POST /api/mocks/generateData` `{ users: 5, pets: 7 }`       | 201 `Se insertaron 5 usuarios y 7 mascotas`          |
-| 6 | `GET /api/users` y `/api/pets` después de generar            | `count: 5` y `count: 7`                              |
-| 7 | Login con un usuario generado y `coder123`                   | 200 `Login correcto`                                 |
-| 8 | `generateData` con `users: "abc"` / sin parámetros           | 400 con mensaje descriptivo                          |
-
----
-
-## Autenticación (`/api/sessions`)
-
-Se mantiene del proyecto anterior: `POST /register`, `POST /login`, `GET /current` y `POST /logout`, con estrategias de Passport (`register`, `login`, `current`) y JWT guardado en la cookie HTTP Only `currentUser`.

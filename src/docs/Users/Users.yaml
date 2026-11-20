@@ -1,0 +1,207 @@
+paths:
+  /api/users:
+    get:
+      summary: Obtiene todos los usuarios
+      tags:
+        - Users
+      responses:
+        "200":
+          description: Listado de usuarios (la contraseña nunca se devuelve)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  count:
+                    type: integer
+                    example: 1
+                  payload:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/User"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/users/{uid}:
+    parameters:
+      - name: uid
+        in: path
+        required: true
+        description: Id (ObjectId) del usuario
+        schema:
+          type: string
+          example: 6b00bd83eeedbb3610b77a70
+    get:
+      summary: Obtiene un usuario por su id
+      tags:
+        - Users
+      responses:
+        "200":
+          description: Usuario encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        "400":
+          $ref: "#/components/responses/InvalidId"
+        "404":
+          $ref: "#/components/responses/UserNotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    put:
+      summary: Actualiza un usuario
+      description: Solo se pueden actualizar first_name, last_name y role. Se debe enviar al menos uno.
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUser"
+      responses:
+        "200":
+          description: Usuario actualizado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/UserResponse"
+                  - type: object
+                    properties:
+                      message:
+                        type: string
+                        example: Usuario actualizado
+        "400":
+          description: Id inválido, body vacío, campo vacío o rol inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                status: error
+                message: El rol debe ser "user" o "admin"
+        "404":
+          $ref: "#/components/responses/UserNotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      summary: Elimina un usuario
+      tags:
+        - Users
+      responses:
+        "200":
+          description: Usuario eliminado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Usuario eliminado
+        "400":
+          $ref: "#/components/responses/InvalidId"
+        "404":
+          $ref: "#/components/responses/UserNotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: Id autogenerado por MongoDB
+          example: 6b00bd83eeedbb3610b77a70
+        first_name:
+          type: string
+          example: Ana
+        last_name:
+          type: string
+          example: Pérez
+        email:
+          type: string
+          description: Único, se guarda en minúsculas
+          example: ana@mail.com
+        role:
+          type: string
+          enum: [user, admin]
+          example: user
+        pets:
+          type: array
+          description: Ids de las mascotas adoptadas por el usuario
+          items:
+            type: string
+          example: []
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    UserResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        payload:
+          $ref: "#/components/schemas/User"
+    Error:
+      type: object
+      properties:
+        status:
+          type: string
+          example: error
+        message:
+          type: string
+    UpdateUser:
+      type: object
+      properties:
+        first_name:
+          type: string
+          example: Ana María
+        last_name:
+          type: string
+          example: Pérez
+        role:
+          type: string
+          enum: [user, admin]
+          example: admin
+  responses:
+    InvalidId:
+      description: El id no es un ObjectId válido
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            status: error
+            message: Id de usuario inválido
+    UserNotFound:
+      description: No existe un usuario con ese id
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            status: error
+            message: Usuario no encontrado
+    InternalError:
+      description: Error interno del servidor
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            status: error
+            message: Error interno del servidor

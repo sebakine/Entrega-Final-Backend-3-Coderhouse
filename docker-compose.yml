@@ -7,7 +7,7 @@ services:
       - mongo-data:/data/db
 
   app:
-    image: sebakine/entrega-final-backend-3:1.0.0
+    image: ninobrowndev/entrega-final-backend-3:1.0.0
     build: .
     restart: unless-stopped
     depends_on:

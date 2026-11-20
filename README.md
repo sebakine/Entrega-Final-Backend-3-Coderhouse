@@ -8,10 +8,10 @@ API en **Node.js + Express + MongoDB (Mongoose)** para gestionar usuarios, masco
 
 ## 🐳 Imagen en Docker Hub
 
-**https://hub.docker.com/r/sebakine/entrega-final-backend-3**
+**https://hub.docker.com/r/ninobrowndev/entrega-final-backend-3**
 
 ```bash
-docker pull sebakine/entrega-final-backend-3:1.0.0
+docker pull ninobrowndev/entrega-final-backend-3:1.0.0
 ```
 
 | Tag      | Descripción                     |
@@ -88,30 +88,30 @@ Para usar una clave JWT propia: `JWT_SECRET=mi_clave docker compose up -d`. Para
 ### Opción 2 — Solo el contenedor, con una base MongoDB propia (por ejemplo Atlas)
 
 ```bash
-docker pull sebakine/entrega-final-backend-3:1.0.0
+docker pull ninobrowndev/entrega-final-backend-3:1.0.0
 
 docker run -d --name adoptme -p 8080:8080 \
   -e MONGO_URL="mongodb+srv://<usuario>:<password>@<cluster>.mongodb.net/<base>" \
   -e JWT_SECRET="<clave_secreta>" \
-  sebakine/entrega-final-backend-3:1.0.0
+  ninobrowndev/entrega-final-backend-3:1.0.0
 ```
 
-O con un archivo de variables: `docker run -d -p 8080:8080 --env-file .env sebakine/entrega-final-backend-3:1.0.0`.
+O con un archivo de variables: `docker run -d -p 8080:8080 --env-file .env ninobrowndev/entrega-final-backend-3:1.0.0`.
 
 ### Construir la imagen localmente
 
 ```bash
-docker build -t sebakine/entrega-final-backend-3:1.0.0 .
-docker run -d -p 8080:8080 --env-file .env sebakine/entrega-final-backend-3:1.0.0
+docker build -t ninobrowndev/entrega-final-backend-3:1.0.0 .
+docker run -d -p 8080:8080 --env-file .env ninobrowndev/entrega-final-backend-3:1.0.0
 ```
 
 ### Publicar la imagen en Docker Hub
 
 ```bash
 docker login
-docker tag sebakine/entrega-final-backend-3:1.0.0 sebakine/entrega-final-backend-3:latest
-docker push sebakine/entrega-final-backend-3:1.0.0
-docker push sebakine/entrega-final-backend-3:latest
+docker tag ninobrowndev/entrega-final-backend-3:1.0.0 ninobrowndev/entrega-final-backend-3:latest
+docker push ninobrowndev/entrega-final-backend-3:1.0.0
+docker push ninobrowndev/entrega-final-backend-3:latest
 ```
 
 ### Qué hace el Dockerfile

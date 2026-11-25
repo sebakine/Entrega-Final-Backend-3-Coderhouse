@@ -237,3 +237,13 @@ curl -X POST localhost:8080/api/adoptions/<uid>/<pid>
 # 4. Ver adopciones
 curl localhost:8080/api/adoptions
 ```
+
+## Evolución del proyecto
+
+Este repositorio es la versión final de la API Adoptme, construida por etapas durante Programación Backend III (Coderhouse):
+
+| Etapa | Repositorio | Qué incorporó |
+| --- | --- | --- |
+| 1 | [Entrega-1-Backend-3](https://github.com/sebakine/Entrega-1-Backend-3) | Router de mocks con Faker para usuarios y mascotas |
+| 1 (variante) | [backend3-entrega1-mocks-adoptme](https://github.com/sebakine/backend3-entrega1-mocks-adoptme) | Mocking con arquitectura en capas y MongoDB Atlas |
+| 2 | Este repositorio | Documentación Swagger, tests funcionales y contenedor Docker |

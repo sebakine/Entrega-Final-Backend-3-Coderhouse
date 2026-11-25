@@ -1,3 +1,8 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset=".github/banner-dark.svg">
+  <img alt="Banner del proyecto" src=".github/banner-light.svg" width="100%">
+</picture>
+
 # Entrega Final — Backend 3 (Coderhouse): API de Adopciones dockerizada
 
 API en **Node.js + Express + MongoDB (Mongoose)** para gestionar usuarios, mascotas y adopciones. Incluye generación de datos de prueba (mocks), documentación **Swagger** del módulo Users, **tests funcionales** del router de adopciones y una **imagen de Docker** publicada en Docker Hub.
